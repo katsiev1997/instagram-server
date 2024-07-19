@@ -12,7 +12,7 @@ interface JwtPayload {
 }
 
 const register = async (req: Request, res: Response): Promise<Response> => {
-  const { email, password, username, fullname, profileImageUrl } = req.body;
+  const { email, password, username, fullname } = req.body;
 
   if (!email || !password || !username || !fullname) {
     return res
@@ -29,13 +29,26 @@ const register = async (req: Request, res: Response): Promise<Response> => {
         password: hashedPassword,
         username,
         fullname,
-        profileImageUrl,
       },
     });
 
-    return res
-      .status(201)
-      .json({ id: user.id, username: user.username, email: user.email });
+    
+    const access_token = createAccessToken({ id: user.id });
+    const refresh_token = createRefreshToken({ id: user.id });
+
+    res.cookie("refreshToken", refresh_token, {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: "/api/auth/refresh_token",
+      httpOnly: true,
+    });
+
+    const { password: _password, ...userData } = user;
+
+    return res.status(200).json({
+      token: access_token,
+      userData,
+      message: "Вы успешно зарегистрировались!",
+    });
   } catch (error) {
     const err = error as ErrorWithCode;
     if (err.code === "P2002") {
@@ -137,9 +150,7 @@ const logout = async (req: Request, res: Response) => {
     return res.status(200).json({ message: "Logged out!" });
   } catch (error) {
     console.error("Error fetching user data:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 };
 
