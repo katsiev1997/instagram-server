@@ -13,7 +13,7 @@ const app: Application = express();
 app.use(express.json());
 app.use("/images", express.static("uploads"));
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'http://localhost:3000',
   credentials: true
 }))
 app.use(cookieParser());
